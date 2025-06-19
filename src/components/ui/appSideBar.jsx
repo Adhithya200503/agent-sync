@@ -227,17 +227,6 @@ export function AppSidebar() {
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                    {/* Add Zurl Analytics link */}
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <Link to="/zurl">
-                          {" "}
-                          {/* Link to the Zurl home/dashboard, which might show analytics */}
-                          <BarChart2 />
-                          Analytics
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
                     <SidebarMenuItem>
                       <SidebarMenuButton asChild>
                         <Link to="/zurl/folders">

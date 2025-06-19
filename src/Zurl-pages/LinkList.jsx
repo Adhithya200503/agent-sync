@@ -10,6 +10,7 @@ import {
   Timestamp,
   orderBy,
 } from "firebase/firestore";
+import { BiCommentDetail } from "react-icons/bi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,7 @@ import { faEnvelope } from "@fortawesome/free-solid-svg-icons";
 import QRCode from "react-qr-code";
 import copy from "copy-to-clipboard";
 import { toast } from "sonner";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import {
   Popover,
@@ -79,7 +80,7 @@ export default function LinkList() {
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
-
+  const navigate = useNavigate();
   // Filter and Search States
   const [searchTerm, setSearchTerm] = useState("");
   const MAX_SEARCH_LENGTH = 50;
@@ -723,6 +724,13 @@ export default function LinkList() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="dark:bg-gray-800 dark:text-white">
+                  <DropdownMenuItem 
+                    onClick={()=>navigate(`/zurl/view-links/${link.shortId}`)}
+                    className="flex items-center gap-2 dark:hover:bg-gray-700 sm:block md:hidden"
+                  >
+                    <BiCommentDetail /> view link details
+   
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleGenerateQR(link)}
                     className="flex items-center gap-2 dark:hover:bg-gray-700"

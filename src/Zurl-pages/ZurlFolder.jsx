@@ -30,7 +30,11 @@ import {
   Pencil,
   Link,
   ExternalLink,
-  MoreVertical
+  MoreVertical,
+  Eye,
+  ChartNoAxesColumnIncreasing,
+  MousePointerClick,
+  Mouse,
 } from "lucide-react";
 import {
   Dialog,
@@ -42,7 +46,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -63,13 +71,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 const ZurlFolder = () => {
   const { currentUser } = useAuth();
   const userId = currentUser?.uid;
 
   // --- Create Folder Dialog States ---
-  const [isCreateFolderDialogOpen, setIsCreateFolderDialogOpen] = useState(false);
+  const [isCreateFolderDialogOpen, setIsCreateFolderDialogOpen] =
+    useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [selectedLinkIds, setSelectedLinkIds] = useState([]);
   const [availableLinks, setAvailableLinks] = useState([]);
@@ -89,7 +99,8 @@ const ZurlFolder = () => {
   const [linksInFolderError, setLinksInFolderError] = useState(null);
 
   // --- Folder Rename Dialog States ---
-  const [isRenameFolderDialogOpen, setIsRenameFolderDialogOpen] = useState(false);
+  const [isRenameFolderDialogOpen, setIsRenameFolderDialogOpen] =
+    useState(false);
   const [folderToRename, setFolderToRename] = useState(null);
   const [newFolderNameValue, setNewFolderNameValue] = useState("");
   const [isRenamingFolder, setIsRenamingFolder] = useState(false);
@@ -103,12 +114,16 @@ const ZurlFolder = () => {
   const [renameLinkError, setRenameLinkError] = useState(null);
 
   // --- Add Link to Folder Dialog States (from available links) ---
-  const [isAddLinkToFolderDialogOpen, setIsAddLinkToFolderDialogOpen] = useState(false);
+  const [isAddLinkToFolderDialogOpen, setIsAddLinkToFolderDialogOpen] =
+    useState(false);
   const [selectedLinksToAdd, setSelectedLinksToAdd] = useState([]);
   const [availableLinksForAdd, setAvailableLinksForAdd] = useState([]);
-  const [loadingAvailableLinksForAdd, setLoadingAvailableLinksForAdd] = useState(false);
+  const [loadingAvailableLinksForAdd, setLoadingAvailableLinksForAdd] =
+    useState(false);
   const [addLinkToFolderError, setAddLinkToFolderError] = useState(null);
   const [isAddingLinksToFolder, setIsAddingLinksToFolder] = useState(false);
+
+  const navigate = useNavigate();
 
   // --- Effect to fetch user's links for folder creation dialog ---
   useEffect(() => {
@@ -128,7 +143,7 @@ const ZurlFolder = () => {
             id: doc.id,
             ...doc.data(),
           }));
-          console.log("the data:",linksData)
+          console.log("the data:", linksData);
           setAvailableLinks(linksData);
         } catch (e) {
           console.error("Error fetching links for selection:", e);
@@ -148,7 +163,12 @@ const ZurlFolder = () => {
 
   // --- Effect & Callback to fetch user's folders ---
   const fetchFolders = useCallback(async () => {
-    console.log("fetchFolders called. userId:", userId, "selectedFolder.id before fetch:", selectedFolder?.id);
+    console.log(
+      "fetchFolders called. userId:",
+      userId,
+      "selectedFolder.id before fetch:",
+      selectedFolder?.id
+    );
     if (!userId || !db) {
       console.log("fetchFolders: Skipping due to missing userId or db.");
       setLoadingFolders(false);
@@ -171,14 +191,17 @@ const ZurlFolder = () => {
       console.log("fetchFolders: Folders fetched, count:", foldersData.length);
 
       if (selectedFolder) {
-        const foundUpdatedFolder = foldersData.find(f => f.id === selectedFolder.id);
+        const foundUpdatedFolder = foldersData.find(
+          (f) => f.id === selectedFolder.id
+        );
         if (!foundUpdatedFolder) {
-          console.log("fetchFolders: Selected folder was deleted, deselecting.");
+          console.log(
+            "fetchFolders: Selected folder was deleted, deselecting."
+          );
           setSelectedFolder(null);
           setLinksInSelectedFolder([]);
         }
       }
-
     } catch (e) {
       console.error("fetchFolders Error:", e);
       setFolderListError("Failed to load your folders.");
@@ -189,15 +212,25 @@ const ZurlFolder = () => {
   }, [userId, db, selectedFolder]);
 
   useEffect(() => {
-    console.log("useEffect for fetchFolders triggered. fetchFolders changed?", fetchFolders);
+    console.log(
+      "useEffect for fetchFolders triggered. fetchFolders changed?",
+      fetchFolders
+    );
     fetchFolders();
   }, [fetchFolders, isCreateFolderDialogOpen, isRenameFolderDialogOpen]);
 
   // --- Effect & Callback to fetch links within a selected folder ---
   const fetchLinksInFolder = useCallback(async () => {
-    console.log("fetchLinksInFolder called. selectedFolder.id:", selectedFolder?.id, "userId:", userId);
+    console.log(
+      "fetchLinksInFolder called. selectedFolder.id:",
+      selectedFolder?.id,
+      "userId:",
+      userId
+    );
     if (!selectedFolder || !userId || !db) {
-      console.log("fetchLinksInFolder: Skipping due to missing selectedFolder, userId or db.");
+      console.log(
+        "fetchLinksInFolder: Skipping due to missing selectedFolder, userId or db."
+      );
       setLinksInSelectedFolder([]);
       return;
     }
@@ -217,18 +250,28 @@ const ZurlFolder = () => {
         ...doc.data(),
       }));
       setLinksInSelectedFolder(linksData);
-      console.log("fetchLinksInFolder: Links fetched for folder", selectedFolder?.name, "count:", linksData.length);
+      console.log(
+        "fetchLinksInFolder: Links fetched for folder",
+        selectedFolder?.name,
+        "count:",
+        linksData.length
+      );
     } catch (e) {
       console.error("fetchLinksInFolder Error:", e);
       setLinksInFolderError("Failed to load links for this folder.");
     } finally {
-      console.log("fetchLinksInFolder: Setting setLoadingLinksInFolder(false).");
+      console.log(
+        "fetchLinksInFolder: Setting setLoadingLinksInFolder(false)."
+      );
       setLoadingLinksInFolder(false);
     }
   }, [selectedFolder, userId, db]);
 
   useEffect(() => {
-    console.log("useEffect for fetchLinksInFolder triggered. fetchLinksInFolder changed?", fetchLinksInFolder);
+    console.log(
+      "useEffect for fetchLinksInFolder triggered. fetchLinksInFolder changed?",
+      fetchLinksInFolder
+    );
     fetchLinksInFolder();
   }, [fetchLinksInFolder]);
 
@@ -278,7 +321,9 @@ const ZurlFolder = () => {
       toast.success("Folder created successfully!");
     } catch (e) {
       console.error("Error during folder creation:", e);
-      setError("Failed to create folder. " + (e.message || "Please try again."));
+      setError(
+        "Failed to create folder. " + (e.message || "Please try again.")
+      );
     } finally {
       setIsCreatingFolder(false);
     }
@@ -292,7 +337,11 @@ const ZurlFolder = () => {
 
   // --- Handlers for Folder Actions ---
   const handleFolderClick = (folder) => {
-    console.log("handleFolderClick: Setting selectedFolder to:", folder.name, folder.id);
+    console.log(
+      "handleFolderClick: Setting selectedFolder to:",
+      folder.name,
+      folder.id
+    );
     setSelectedFolder(folder);
   };
 
@@ -320,13 +369,16 @@ const ZurlFolder = () => {
       toast.success("Folder renamed successfully!");
     } catch (e) {
       console.error("Error renaming folder:", e);
-      setRenameFolderError("Failed to rename folder. " + (e.message || "Please try again."));
+      setRenameFolderError(
+        "Failed to rename folder. " + (e.message || "Please try again.")
+      );
     } finally {
       setIsRenamingFolder(false);
     }
   };
 
-  const handleDeleteFolder = async (folderId, folderName) => { // Removed linkCount from params
+  const handleDeleteFolder = async (folderId, folderName) => {
+    // Removed linkCount from params
     if (!userId || !db) return;
 
     const confirmDelete = window.confirm(
@@ -361,7 +413,9 @@ const ZurlFolder = () => {
       fetchFolders();
     } catch (e) {
       console.error("Error deleting folder:", e);
-      toast.error("Failed to delete folder: " + (e.message || "Please try again."));
+      toast.error(
+        "Failed to delete folder: " + (e.message || "Please try again.")
+      );
     }
   };
 
@@ -392,7 +446,9 @@ const ZurlFolder = () => {
       fetchLinksInFolder();
     } catch (e) {
       console.error("Error renaming link:", e);
-      setRenameLinkError("Failed to rename link. " + (e.message || "Please try again."));
+      setRenameLinkError(
+        "Failed to rename link. " + (e.message || "Please try again.")
+      );
     } finally {
       setIsRenamingLink(false);
     }
@@ -422,7 +478,10 @@ const ZurlFolder = () => {
       fetchFolders(); // To refresh folder list (though linkCount not shown on cards anymore)
     } catch (e) {
       console.error("Error unassigning link from folder:", e);
-      toast.error("Failed to remove link from folder: " + (e.message || "Please try again."));
+      toast.error(
+        "Failed to remove link from folder: " +
+          (e.message || "Please try again.")
+      );
     }
   };
 
@@ -440,7 +499,10 @@ const ZurlFolder = () => {
         where("folderId", "==", null)
       );
       const unassignedLinksSnapshot = await getDocs(unassignedLinksQuery);
-      const unassignedLinks = unassignedLinksSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const unassignedLinks = unassignedLinksSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
 
       setAvailableLinksForAdd(unassignedLinks);
       setIsAddLinkToFolderDialogOpen(true);
@@ -474,12 +536,16 @@ const ZurlFolder = () => {
       await batch.commit();
 
       setIsAddLinkToFolderDialogOpen(false);
-      toast.success(`${selectedLinksToAdd.length} link(s) added to folder successfully!`);
+      toast.success(
+        `${selectedLinksToAdd.length} link(s) added to folder successfully!`
+      );
       fetchLinksInFolder();
       fetchFolders();
     } catch (e) {
       console.error("Error adding links to folder:", e);
-      setAddLinkToFolderError("Failed to add links. " + (e.message || "Please try again."));
+      setAddLinkToFolderError(
+        "Failed to add links. " + (e.message || "Please try again.")
+      );
     } finally {
       setIsAddingLinksToFolder(false);
     }
@@ -494,43 +560,55 @@ const ZurlFolder = () => {
   };
 
   return (
-    <div className="folder-management p-4 flex flex-col gap-6">
-      {/* --- Create Folder Dialog Trigger --- */}
+    <div className="folder-management p-4 flex flex-col w-full overflow-hidden gap-6">
       <div className="flex justify-start">
-        <Dialog open={isCreateFolderDialogOpen} onOpenChange={setIsCreateFolderDialogOpen}>
+        <Dialog
+          open={isCreateFolderDialogOpen}
+          onOpenChange={setIsCreateFolderDialogOpen}
+        >
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
               <Plus className="h-5 w-5" /> New Folder
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] dark:bg-gray-800">
+          <DialogContent className="sm:max-w-[500px] w-[95%] dark:bg-gray-800">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold dark:text-white">Create New Folder</DialogTitle>
+              <DialogTitle className="text-2xl font-bold dark:text-white">
+                Create New Folder
+              </DialogTitle>
               <DialogDescription className="text-gray-600 dark:text-gray-300">
-                Enter a name for your new folder and optionally add <span className="font-semibold text-blue-400">unassigned</span> links to it.
+                Enter a name for your new folder and optionally add{" "}
+                <span className="font-semibold text-blue-400">unassigned</span>{" "}
+                links to it.
               </DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="folderName" className="text-right dark:text-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+                <Label
+                  htmlFor="folderName"
+                  className="sm:text-right text-left dark:text-gray-200"
+                >
                   Folder Name
                 </Label>
                 <Input
                   id="folderName"
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
-                  className="col-span-3 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                  className="col-span-1 sm:col-span-3 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                   placeholder="e.g., Marketing Campaigns 2024"
                   disabled={isCreatingFolder}
                 />
               </div>
 
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label htmlFor="addLinks" className="text-right mt-2 dark:text-gray-200">
+              <div className="grid grid-cols-1 sm:grid-cols-4 items-start gap-4">
+                <Label
+                  htmlFor="addLinks"
+                  className="sm:text-right mt-2 text-left dark:text-gray-200"
+                >
                   Add Links
                 </Label>
-                <div className="col-span-3 w-full">
+                <div className="col-span-1 sm:col-span-3 w-full">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -567,21 +645,33 @@ const ZurlFolder = () => {
                               {availableLinks.map((link) => (
                                 <CommandItem
                                   key={link.id}
-                                  value={link.title || link.shortUrl || link.originalUrl}
-                                  onSelect={() => handleLinkSelectionChange(link.id)}
+                                  value={
+                                    link.title ||
+                                    link.shortUrl ||
+                                    link.originalUrl
+                                  }
+                                  onSelect={() =>
+                                    handleLinkSelectionChange(link.id)
+                                  }
                                   className="flex items-center gap-2 dark:text-gray-200 data-[selected=true]:bg-blue-600 data-[selected=true]:text-white"
                                 >
                                   <Checkbox
                                     checked={selectedLinkIds.includes(link.id)}
-                                    onCheckedChange={() => handleLinkSelectionChange(link.id)}
+                                    onCheckedChange={() =>
+                                      handleLinkSelectionChange(link.id)
+                                    }
                                     className="dark:border-gray-500 dark:data-[state=checked]:bg-blue-500 dark:data-[state=checked]:text-white"
                                   />
                                   <span className="truncate">
-                                    {link.title || link.shortUrl || link.originalUrl}
+                                    {link.title ||
+                                      link.shortUrl ||
+                                      link.originalUrl}
                                   </span>
                                   <Check
                                     className={`ml-auto h-4 w-4 ${
-                                      selectedLinkIds.includes(link.id) ? "opacity-100" : "opacity-0"
+                                      selectedLinkIds.includes(link.id)
+                                        ? "opacity-100"
+                                        : "opacity-0"
                                     }`}
                                   />
                                 </CommandItem>
@@ -602,19 +692,19 @@ const ZurlFolder = () => {
               </p>
             )}
 
-            <DialogFooter>
+            <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => setIsCreateFolderDialogOpen(false)}
                 disabled={isCreatingFolder}
-                className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                className="w-full sm:w-auto dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleFolderCreation}
                 disabled={!newFolderName.trim() || isCreatingFolder}
-                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
               >
                 {isCreatingFolder ? (
                   <span className="flex items-center">
@@ -631,20 +721,17 @@ const ZurlFolder = () => {
 
       {/* --- Display Existing Folders Section --- */}
       <div className="my-6">
-        <h2 className="text-xl font-semibold mb-4 dark:text-white">Your Folders</h2>
-        {loadingFolders ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full bg-gray-200 dark:bg-gray-700 rounded-lg" />
-            ))}
-          </div>
-        ) : folderListError ? (
+        <h2 className="text-xl font-semibold mb-4 dark:text-white">
+          Your Folders
+        </h2>
+        {folderListError ? (
           <p className="text-red-500 flex items-center gap-1">
             <XCircle className="h-5 w-5" /> {folderListError}
           </p>
         ) : folders.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400">
-            You haven't created any folders yet. Click "New Folder" to get started!
+            You haven't created any folders yet. Click "New Folder" to get
+            started!
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -652,9 +739,13 @@ const ZurlFolder = () => {
               <div
                 key={folder.id}
                 className={`bg-card dark:bg-gray-700 text-card-foreground dark:text-white rounded-lg shadow-md p-4 flex flex-col justify-between h-24 relative
-                  ${selectedFolder?.id === folder.id ? "border-2 border-blue-500 ring-2 ring-blue-500" : "border border-gray-200 dark:border-gray-600"}
-                  hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors
-                `}
+            ${
+              selectedFolder?.id === folder.id
+                ? "border-2 border-blue-500 ring-2 ring-blue-500"
+                : "border border-gray-200 dark:border-gray-600"
+            }
+            hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors w-full
+          `}
               >
                 <button
                   onClick={() => handleFolderClick(folder)}
@@ -662,9 +753,10 @@ const ZurlFolder = () => {
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Folder className="h-6 w-6 text-blue-500" />
-                    <h3 className="font-medium text-lg truncate">{folder.name}</h3>
+                    <h3 className="font-medium text-lg truncate">
+                      {folder.name}
+                    </h3>
                   </div>
-                  {/* Removed linkCount display from here */}
                   <p className="text-sm text-gray-600 dark:text-gray-300">
                     Links
                   </p>
@@ -681,7 +773,9 @@ const ZurlFolder = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-40 dark:bg-gray-700 dark:border-gray-600">
-                    <DropdownMenuLabel className="dark:text-white">Folder Actions</DropdownMenuLabel>
+                    <DropdownMenuLabel className="dark:text-white">
+                      Folder Actions
+                    </DropdownMenuLabel>
                     <DropdownMenuSeparator className="dark:bg-gray-600" />
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -695,7 +789,7 @@ const ZurlFolder = () => {
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteFolder(folder.id, folder.name); // Removed folder.linkCount
+                        handleDeleteFolder(folder.id, folder.name);
                       }}
                       className="text-red-500 dark:text-red-400 dark:hover:bg-gray-600 cursor-pointer"
                     >
@@ -711,18 +805,18 @@ const ZurlFolder = () => {
 
       {/* --- Selected Folder Details and Links Section --- */}
       {selectedFolder && (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-8 bg-white dark:bg-gray-800 shadow-md">
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 sm:p-6 mt-8 bg-white dark:bg-gray-800 shadow-md w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl sm:text-2xl font-bold dark:text-white flex items-center gap-2 mb-2 sm:mb-0">
               <FolderOpen className="h-7 w-7 text-blue-500" />
-              {selectedFolder.name}
+              <span className="truncate">{selectedFolder.name}</span>
               <span className="text-base font-normal text-gray-500 dark:text-gray-400">
                 ({linksInSelectedFolder.length || 0} links)
               </span>
             </h2>
             <Button
               onClick={handleAddLinksToFolderClick}
-              className="bg-blue-600 hover:bg-blue-800 text-white flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-800 text-white flex items-center gap-2 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" /> Add Link
             </Button>
@@ -734,28 +828,31 @@ const ZurlFolder = () => {
             </p>
           ) : linksInSelectedFolder.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
-              No links found in this folder. Add some using the "Add Link" button!
+              No links found in this folder. Add some using the "Add Link"
+              button!
             </p>
           ) : (
             <div className="grid gap-4">
               {linksInSelectedFolder.map((link) => (
                 <div
                   key={link.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-md dark:border-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 hover:bg-gray-100 transition-colors"
+                  className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-center p-4 border rounded-md dark:border-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 hover:bg-gray-100 transition-colors"
                 >
-                  <div className="flex items-center gap-3 min-w-0 flex-grow">
-                    <LinkIcon className="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-                    <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-grow mb-2 sm:mb-0">
+                    <div className="flex flex-col gap-3 min-w-0">
                       <span
                         className="font-medium text-blue-600 hover:underline cursor-pointer truncate dark:text-blue-400"
                         onClick={() => window.open(link.shortUrl, "_blank")}
                       >
-                        {link.title || link.shortUrl}
+                        {link.name || link.shortUrl.slice(0, 20)}
                       </span>
-                      <span className="text-sm text-gray-600 truncate dark:text-gray-300">
-                        <ExternalLink className="inline-block h-3 w-3 mr-1 align-text-bottom" />
-                        {link.originalUrl.length > 50 ? `${link.originalUrl.slice(0, 50)}...` : link.originalUrl}
+                      <span className="font-medium">
+                        created at {link.createdAt.toDate().toLocaleString()}
                       </span>
+                       <span className="flex items-center gap-2.5">
+                         <Mouse className="font-sm text-muted-foreground" /><span className="font-bold text-xl">{link.clicks}</span>
+                      </span>
+
                     </div>
                   </div>
                   <DropdownMenu>
@@ -769,7 +866,9 @@ const ZurlFolder = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-40 dark:bg-gray-700 dark:border-gray-600">
-                      <DropdownMenuLabel className="dark:text-white">Link Actions</DropdownMenuLabel>
+                      <DropdownMenuLabel className="dark:text-white">
+                        Link Actions
+                      </DropdownMenuLabel>
                       <DropdownMenuSeparator className="dark:bg-gray-600" />
                       <DropdownMenuItem
                         onClick={() => handleRenameLinkClick(link)}
@@ -778,10 +877,20 @@ const ZurlFolder = () => {
                         <Pencil className="mr-2 h-4 w-4" /> Rename Title
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleDeleteLinkFromFolder(link.id, link.shortUrl)}
+                        onClick={() =>
+                          handleDeleteLinkFromFolder(link.id, link.shortUrl)
+                        }
                         className="text-red-500 dark:text-red-400 dark:hover:bg-gray-600 cursor-pointer"
                       >
                         <Trash2 className="mr-2 h-4 w-4" /> Remove from Folder
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          navigate(`/zurl/view-links/${link.shortId}`)
+                        }
+                        className="dark:hover:bg-gray-600 cursor-pointer"
+                      >
+                        <Eye className="mr-2 h-4 w-4" /> view link details
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -793,8 +902,11 @@ const ZurlFolder = () => {
       )}
 
       {/* --- Rename Folder Dialog --- */}
-      <Dialog open={isRenameFolderDialogOpen} onOpenChange={setIsRenameFolderDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] dark:bg-gray-800">
+      <Dialog
+        open={isRenameFolderDialogOpen}
+        onOpenChange={setIsRenameFolderDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[425px] w-[95%] dark:bg-gray-800">
           <DialogHeader>
             <DialogTitle className="dark:text-white">Rename Folder</DialogTitle>
             <DialogDescription className="dark:text-gray-300">
@@ -802,15 +914,18 @@ const ZurlFolder = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="newFolderName" className="text-right dark:text-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+              <Label
+                htmlFor="newFolderName"
+                className="sm:text-right text-left dark:text-gray-200"
+              >
                 New Name
               </Label>
               <Input
                 id="newFolderName"
                 value={newFolderNameValue}
                 onChange={(e) => setNewFolderNameValue(e.target.value)}
-                className="col-span-3 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                className="col-span-1 sm:col-span-3 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 disabled={isRenamingFolder}
               />
             </div>
@@ -820,19 +935,19 @@ const ZurlFolder = () => {
               </p>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setIsRenameFolderDialogOpen(false)}
               disabled={isRenamingFolder}
-              className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="w-full sm:w-auto dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               Cancel
             </Button>
             <Button
               onClick={handleRenameFolder}
               disabled={!newFolderNameValue.trim() || isRenamingFolder}
-              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
             >
               {isRenamingFolder ? (
                 <span className="flex items-center">
@@ -847,24 +962,33 @@ const ZurlFolder = () => {
       </Dialog>
 
       {/* --- Rename Link Dialog --- */}
-      <Dialog open={isRenameLinkDialogOpen} onOpenChange={setIsRenameLinkDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] dark:bg-gray-800">
+      <Dialog
+        open={isRenameLinkDialogOpen}
+        onOpenChange={setIsRenameLinkDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[425px] w-[95%] dark:bg-gray-800">
           <DialogHeader>
-            <DialogTitle className="dark:text-white">Rename Link Title</DialogTitle>
+            <DialogTitle className="dark:text-white">
+              Rename Link Title
+            </DialogTitle>
             <DialogDescription className="dark:text-gray-300">
-              Change the display title for this link. The actual short URL won't change.
+              Change the display title for this link. The actual short URL won't
+              change.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="newLinkTitle" className="text-right dark:text-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-4">
+              <Label
+                htmlFor="newLinkTitle"
+                className="sm:text-right text-left dark:text-gray-200"
+              >
                 New Title
               </Label>
               <Input
                 id="newLinkTitle"
                 value={newLinkTitleValue}
                 onChange={(e) => setNewLinkTitleValue(e.target.value)}
-                className="col-span-3 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                className="col-span-1 sm:col-span-3 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 disabled={isRenamingLink}
               />
             </div>
@@ -874,19 +998,19 @@ const ZurlFolder = () => {
               </p>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setIsRenameLinkDialogOpen(false)}
               disabled={isRenamingLink}
-              className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="w-full sm:w-auto dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               Cancel
             </Button>
             <Button
               onClick={handleRenameLink}
               disabled={!newLinkTitleValue.trim() || isRenamingLink}
-              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
             >
               {isRenamingLink ? (
                 <span className="flex items-center">
@@ -901,12 +1025,18 @@ const ZurlFolder = () => {
       </Dialog>
 
       {/* --- Add Link to Folder Dialog --- */}
-      <Dialog open={isAddLinkToFolderDialogOpen} onOpenChange={setIsAddLinkToFolderDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] dark:bg-gray-800">
+      <Dialog
+        open={isAddLinkToFolderDialogOpen}
+        onOpenChange={setIsAddLinkToFolderDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[500px] w-[95%] dark:bg-gray-800">
           <DialogHeader>
-            <DialogTitle className="dark:text-white">Add Links to "{selectedFolder?.name}"</DialogTitle>
+            <DialogTitle className="dark:text-white">
+              Add Links to "{selectedFolder?.name}"
+            </DialogTitle>
             <DialogDescription className="dark:text-gray-300">
-              Select links to add to this folder. Only links not already in this folder are shown.
+              Select links to add to this folder. Only links not already in this
+              folder are shown.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -925,25 +1055,36 @@ const ZurlFolder = () => {
               </p>
             ) : (
               <Command className="dark:bg-gray-700 border dark:border-gray-600 rounded-md">
-                <CommandInput placeholder="Search available links..." className="dark:text-white dark:placeholder-gray-400" />
+                <CommandInput
+                  placeholder="Search available links..."
+                  className="dark:text-white dark:placeholder-gray-400"
+                />
                 <CommandList className="max-h-60 overflow-y-auto">
                   <CommandGroup>
                     {availableLinksForAdd.map((link) => (
                       <CommandItem
                         key={link.id}
                         value={link.title || link.shortUrl || link.originalUrl}
-                        onSelect={() => handleAvailableLinkForAddSelectionChange(link.id)}
+                        onSelect={() =>
+                          handleAvailableLinkForAddSelectionChange(link.id)
+                        }
                         className="flex items-center gap-2 dark:text-gray-200 data-[selected=true]:bg-blue-600 data-[selected=true]:text-white"
                       >
                         <Checkbox
                           checked={selectedLinksToAdd.includes(link.id)}
-                          onCheckedChange={() => handleAvailableLinkForAddSelectionChange(link.id)}
+                          onCheckedChange={() =>
+                            handleAvailableLinkForAddSelectionChange(link.id)
+                          }
                           className="dark:border-gray-500 dark:data-[state=checked]:bg-blue-500 dark:data-[state=checked]:text-white"
                         />
-                        <span className="truncate">{link.title || link.shortUrl || link.originalUrl}</span>
+                        <span className="truncate">
+                          {link.title || link.shortUrl || link.originalUrl}
+                        </span>
                         <Check
                           className={`ml-auto h-4 w-4 ${
-                            selectedLinksToAdd.includes(link.id) ? "opacity-100" : "opacity-0"
+                            selectedLinksToAdd.includes(link.id)
+                              ? "opacity-100"
+                              : "opacity-0"
                           }`}
                         />
                       </CommandItem>
@@ -963,19 +1104,21 @@ const ZurlFolder = () => {
               <XCircle className="h-4 w-4" /> {addLinkToFolderError}
             </p>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setIsAddLinkToFolderDialogOpen(false)}
               disabled={isAddingLinksToFolder}
-              className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="w-full sm:w-auto dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               Cancel
             </Button>
             <Button
               onClick={handleAddSelectedLinksToFolder}
-              disabled={selectedLinksToAdd.length === 0 || isAddingLinksToFolder}
-              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              disabled={
+                selectedLinksToAdd.length === 0 || isAddingLinksToFolder
+              }
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
             >
               {isAddingLinksToFolder ? (
                 <span className="flex items-center">
