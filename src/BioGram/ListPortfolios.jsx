@@ -97,8 +97,8 @@ const ListPortfolios = () => {
   };
 
   const handleAnalyticsClick = (id) => {
-    toast.info(`Analytics for portfolio ${id} (Coming soon!)`);
-    // Implement actual analytics logic here later
+    navigate(`/bio-gram/analytics/${id}`);
+  
   };
 
 

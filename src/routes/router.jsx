@@ -37,6 +37,7 @@ import ZapStoreAuthPage from "../ZapStore/ZapStoreAuthPage";
 import EditZapStore from "../ZapStore/EditZapStore";
 import ShortLinkInfoPage from "../Zurl-pages/ShortLinkInfoPage";
 import ZurlFolder from "../Zurl-pages/ZurlFolder";
+import BioGramAnalytics from "../BioGram/BioGramAnalytics";
  
 
 
@@ -179,6 +180,10 @@ const router = createBrowserRouter([
         path: "link-generator",
         element: <PortfolioLinkResult />,
       },
+      {
+        path:"analytics/:slug",
+        element:<BioGramAnalytics />
+      }
     ],
   },
   {

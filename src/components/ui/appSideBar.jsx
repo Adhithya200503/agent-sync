@@ -317,15 +317,6 @@ export function AppSidebar() {
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                    {/* Add Bio Gram Analytics if applicable */}
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <Link to="/bio-gram/analytics">
-                          <BarChart2 />
-                          Analytics
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
               </CollapsibleContent>
