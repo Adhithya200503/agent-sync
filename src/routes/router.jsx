@@ -12,7 +12,6 @@ import ShortenUrlForm from "../Zurl-pages/ShortenUrlForm";
 import LinkList from "../Zurl-pages/LinkList";
 import ZapLinkHome from "../zaplink/ZapLinkHome";
 import CheckProfile from "../authPages/CheckUserProfile";
-import EditLinkPage from "../Zaplink/ZapLinkEditPage";
 import PublicLinkPage from "../Zaplink/PublicZapLink";
 import ZurlAnalytics from "../Zurl-pages/ZurlAnalytics";
 import LinkPageStats from "../Zaplink/LinkPageStats";
@@ -34,6 +33,7 @@ import ZappyPost from "../ZappyPost/ZappyPost";
 import ShortLinkInfoPage from "../Zurl-pages/ShortLinkInfoPage";
 import ZurlFolder from "../Zurl-pages/ZurlFolder";
 import BioGramAnalytics from "../BioGram/BioGramAnalytics";
+import CreateZapLink from "../Zaplink/ZapLinkEditPage";
 
 
 const router = createBrowserRouter([
@@ -146,7 +146,7 @@ const router = createBrowserRouter([
       },
       {
         path: "create-zap-link",
-        element: <EditLinkPage />,
+        element: <CreateZapLink />,
       },
       {
         path: ":slug",
