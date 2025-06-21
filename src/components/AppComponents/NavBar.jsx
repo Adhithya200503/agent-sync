@@ -36,12 +36,6 @@ const components = [
     description: "ZappyPost generates tailored social media posts from URLs. Select a platform (Instagram, LinkedIn, etc.) for optimized content.",
   },
   {
-    title:"Zap Store",
-    href: "/zap-store",
-    description:
-      "Start your own ecommerce website with Zap Store",
-  },
-  {
     title:"Whatsapp",
     href: "/whatsapp",
     description:

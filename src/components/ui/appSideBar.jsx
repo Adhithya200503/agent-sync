@@ -61,35 +61,24 @@ export function AppSidebar() {
     currentPath.startsWith("/zurl") ||
     currentPath.startsWith("/zap-link") ||
     currentPath.startsWith("/Bio-gram") ||
-    currentPath.startsWith("/zap-store") ||
     currentPath.startsWith("/zappy-post") ||
     currentPath.startsWith("/apps/primitives");
   const hideZurlSection =
     currentPath.startsWith("/whatsapp") ||
     currentPath.startsWith("/zap-link") ||
     currentPath.startsWith("/Bio-gram") ||
-    currentPath.startsWith("/zap-store") ||
     currentPath.startsWith("/zappy-post") ||
     currentPath.startsWith("/apps/primitives");
   const hideZapLinksSection =
     currentPath.startsWith("/whatsapp") ||
     currentPath.startsWith("/zurl") ||
     currentPath.startsWith("/Bio-gram") ||
-    currentPath.startsWith("/zap-store") ||
     currentPath.startsWith("/zappy-post") ||
     currentPath.startsWith("/apps/primitives");
   const hideBioGramSection =
     currentPath.startsWith("/whatsapp") ||
     currentPath.startsWith("/zurl") ||
     currentPath.startsWith("/zap-link") ||
-    currentPath.startsWith("/zap-store") ||
-    currentPath.startsWith("/zappy-post") ||
-    currentPath.startsWith("/apps/primitives");
-  const hideZapStoreSection =
-    currentPath.startsWith("/whatsapp") ||
-    currentPath.startsWith("/zurl") ||
-    currentPath.startsWith("/zap-link") ||
-    currentPath.startsWith("/Bio-gram") ||
     currentPath.startsWith("/zappy-post") ||
     currentPath.startsWith("/apps/primitives");
   const hideZappyPostSection =
@@ -118,7 +107,6 @@ export function AppSidebar() {
     if (path.startsWith("/zurl")) return "zurl";
     if (path.startsWith("/zap-link")) return "zap-link";
     if (path.startsWith("/bio-gram")) return "bio-gram";
-    if (path.startsWith("/zap-store")) return "zap-store";
     if (path.startsWith("/zappy-post")) return "zappy-post";
     if (path.startsWith("/apps/primitives")) return "apps-primitives";
 
@@ -324,54 +312,7 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {showSection("zap-store") && (
-          <SidebarGroup className="data-[collapsed=true]:hidden">
-            <Collapsible defaultOpen className="group/collapsible">
-              <SidebarGroupLabel asChild>
-                <CollapsibleTrigger className="w-full">
-                  <ShoppingBag className="mr-[10px]" />
-                  Zap Store
-                  <ChevronDown className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <Link to="/zap-store">
-                          <Plus />
-                          Create Zap Store
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <Link to="/zap-store/stores">
-                          {" "}
-                          {/* Assuming this lists stores */}
-                          <List />
-                          View Stores
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    {/* Add Zap Store Analytics if applicable */}
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <Link to="/zap-store/analytics">
-                          {" "}
-                          {/* Assuming an analytics path */}
-                          <BarChart2 />
-                          Analytics
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </Collapsible>
-          </SidebarGroup>
-        )}
+        
 
         {showSection("zappy-post") && (
           <SidebarGroup className="data-[collapsed=true]:hidden">

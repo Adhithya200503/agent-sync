@@ -30,15 +30,10 @@ import { useAuth } from "../context/AuthContext";
 import AuthRedirector from "../AuthRedirector";
 
 import ZappyPost from "../ZappyPost/ZappyPost";
-import ZapStoreHome from "../ZapStore/ZapStoreHome";
-import ZapStoreInventoryPage from "../ZapStore/ZapStoreInventoryPage";
-import ProductInfo from "../ZapStore/ProductInfo";
-import ZapStoreAuthPage from "../ZapStore/ZapStoreAuthPage";
-import EditZapStore from "../ZapStore/EditZapStore";
+
 import ShortLinkInfoPage from "../Zurl-pages/ShortLinkInfoPage";
 import ZurlFolder from "../Zurl-pages/ZurlFolder";
 import BioGramAnalytics from "../BioGram/BioGramAnalytics";
- 
 
 
 const router = createBrowserRouter([
@@ -46,7 +41,6 @@ const router = createBrowserRouter([
     path: "/Zurl/unlock/:shortId",
     element: <ZurlUnlockPage />,
   },
- 
   {
     path: "/",
     element: <AuthRedirector />,
@@ -62,7 +56,7 @@ const router = createBrowserRouter([
     element: <AgentSync />,
     children: [
       {
-        index:true,
+        index: true,
         element: <CreateLinkPage />,
       },
       {
@@ -82,9 +76,9 @@ const router = createBrowserRouter([
   {
     path: "zurl",
     element: <AgentSync />,
-    children:[
+    children: [
       {
-        index:true,
+        index: true,
         element: <ShortenUrlForm />,
       },
       {
@@ -92,14 +86,14 @@ const router = createBrowserRouter([
         element: <LinkList />,
       },
       {
-        path:"view-links/:shortId",
-        element:<ShortLinkInfoPage />
+        path: "view-links/:shortId",
+        element: <ShortLinkInfoPage />,
       },
       {
-        path:"folders",
-        element:<ZurlFolder />
+        path: "folders",
+        element: <ZurlFolder />,
       },
-       
+
       {
         path: ":slug",
         element: <ZurlAnalytics />,
@@ -181,9 +175,9 @@ const router = createBrowserRouter([
         element: <PortfolioLinkResult />,
       },
       {
-        path:"analytics/:slug",
-        element:<BioGramAnalytics />
-      }
+        path: "analytics/:slug",
+        element: <BioGramAnalytics />,
+      },
     ],
   },
   {
@@ -198,32 +192,6 @@ const router = createBrowserRouter([
         index: true,
         element: <ZappyPost />,
       },
-    ],
-  },
-  {
-    path: "/zap-store",
-    element: <AgentSync />,
-    children: [
-      {
-        index:true,
-        element: <ZapStoreHome />,
-      },
-      {
-        path:"stores/:storeId",
-        element:<ZapStoreInventoryPage />
-      },
-      {
-        path:"products/:productId",
-        element:<ProductInfo />
-      },
-      {
-        path:"auth",
-        element:<ZapStoreAuthPage />
-      },
-      {
-        path:"edit-zap-store/:storeId",
-        element:<EditZapStore />
-      }
     ],
   },
 ]);

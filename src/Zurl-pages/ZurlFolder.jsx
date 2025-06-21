@@ -662,7 +662,14 @@ const ZurlFolder = () => {
                                     }
                                     className="dark:border-gray-500 dark:data-[state=checked]:bg-blue-500 dark:data-[state=checked]:text-white"
                                   />
-                                  <span className="truncate">
+                                  <span
+                                    className="truncate overflow-hidden whitespace-nowrap max-w-[400px]"
+                                    title={
+                                      link?.name ||
+                                      link.shortUrl ||
+                                      link.originalUrl
+                                    }
+                                  >
                                     {link.title ||
                                       link.shortUrl ||
                                       link.originalUrl}
@@ -849,10 +856,10 @@ const ZurlFolder = () => {
                       <span className="font-medium">
                         created at {link.createdAt.toDate().toLocaleString()}
                       </span>
-                       <span className="flex items-center gap-2.5">
-                         <Mouse className="font-sm text-muted-foreground" /><span className="font-bold text-xl">{link.clicks}</span>
+                      <span className="flex items-center gap-2.5">
+                        <Mouse className="font-sm text-muted-foreground" />
+                        <span className="font-bold text-xl">{link.clicks}</span>
                       </span>
-
                     </div>
                   </div>
                   <DropdownMenu>

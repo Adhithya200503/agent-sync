@@ -128,9 +128,9 @@ const LinkPageStats = () => {
     );
   }
 
-  if (!stats) {
+  if (!stats.stat) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
         <Card>
           <CardHeader>
             <CardTitle>No Data Found</CardTitle>
@@ -148,6 +148,9 @@ const LinkPageStats = () => {
       </div>
     );
   }
+
+
+
 
   const countryData = stats.stats.map((stat) => ({
     name: stat.country,
@@ -617,8 +620,6 @@ const LinkPageStats = () => {
             </CardContent>
           </Card>
         </div>
-
-        
 
         {/* New Section for URL-related Info and Top Cities Card */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

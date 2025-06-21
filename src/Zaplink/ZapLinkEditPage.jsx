@@ -31,15 +31,14 @@ import {
   faDownload,
   faCopy,
   faSpinner,
-  faRobot, // Add robot icon for AI
+  faRobot,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 import { useLocation } from "react-router-dom";
 import EmojiPicker from "emoji-picker-react";
 
-
-import { Circle, CircleX, Loader, Pencil } from "lucide-react";
+import { Circle, CircleX, Loader, Pencil, Image as ImageIcon } from "lucide-react";
 
 // Define a fallback icon component using Font Awesome
 const FallbackLinkIcon = ({ className }) => (
@@ -56,13 +55,12 @@ const PLATFORMS = [
   { name: "Facebook", icon: faFacebookF, prefix: "https://facebook.com/" },
   { name: "LinkedIn", icon: faLinkedinIn, prefix: "https://linkedin.com/in/" },
   { name: "Twitter", icon: faTwitter, prefix: "https://twitter.com/" },
-  { name: "YouTube", icon: faYoutube, prefix: "https://youtube.com/" }, // Corrected YouTube prefix
+  { name: "YouTube", icon: faYoutube, prefix: "https://www.youtube.com/" }, // Corrected YouTube prefix
   { name: "Twitch", icon: faTwitch, prefix: "https://twitch.tv/" },
   { name: "GitHub", icon: faGithub, prefix: "https://github.com/" },
   { name: "Discord", icon: faDiscord, prefix: "https://discord.gg/" },
   { name: "Website", icon: faGlobe, prefix: "https://" },
   { name: "Gmail", icon: faEnvelope, prefix: "mailto:" },
-  // For "Custom", we will handle title and URL separately
   { name: "Custom", icon: faLink, prefix: "" },
 ];
 
@@ -80,14 +78,23 @@ const TEMPLATES = [
 export default function EditLinkPage() {
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
-  const [profilePic, setProfilePic] = useState("");
+  const [profilePic, setProfilePic] = useState(null); // Stores the File object for a new profile pic upload
+  const [profilePicPreviewUrl, setProfilePicPreviewUrl] = useState(""); // URL for local preview (blob: or existing)
+  const [backendProfilePicUrl, setBackendProfilePicUrl] = useState(""); // Stores the actual Cloudinary URL from backend
   const [links, setLinks] = useState([
-    { platform: "Instagram", value: "", title: "" },
+    {
+      platform: "Instagram",
+      value: "",
+      title: "",
+      imageFile: null, // Stores the File object for a new custom link image
+      linkImagePreviewUrl: "", // URL for local preview of custom link image
+      backendLinkImageUrl: "", // Stores the actual Cloudinary URL for custom link image
+    },
   ]);
   const location = useLocation();
   const selectedtemplate = location.state?.template;
   const [selectedTemplate, setSelectedTemplate] = useState(selectedtemplate);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // Can be reused for general "saving" state
   const [isSaving, setIsSaving] = useState(false);
   const [linkPageUrl, setLinkPageUrl] = useState("");
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
@@ -96,10 +103,10 @@ export default function EditLinkPage() {
   const { getAccessToken } = useAuth();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [activeLinkIndex, setActiveLinkIndex] = useState(null);
-  const customLinkInputRefs = useRef([]); // Ref for each custom link input
-  const [pickerPosition, setPickerPosition] = useState("bottom"); // 'top' or 'bottom'
+  const customLinkInputRefs = useRef([]);
+  const [pickerPosition, setPickerPosition] = useState("bottom");
 
-  // New state for AI bio assistance
+  // AI bio assistance
   const [useAIBio, setUseAIBio] = useState(false);
   const [aiBioQuestion, setAiBioQuestion] = useState("");
   const [aiBioAnswer, setAiBioAnswer] = useState("");
@@ -108,31 +115,28 @@ export default function EditLinkPage() {
   const handleEmojiClick = (emojiData) => {
     if (activeLinkIndex !== null) {
       const currentLink = links[activeLinkIndex];
-      handleLinkChange(index, "title", currentLink.title + emojiData.emoji);
+      handleLinkChange(activeLinkIndex, "title", currentLink.title + emojiData.emoji);
     }
     setShowEmojiPicker(false);
     setActiveLinkIndex(null);
   };
 
-  // Effect to calculate picker position when it's about to be shown
   useEffect(() => {
     if (showEmojiPicker && activeLinkIndex !== null) {
       const inputElement = customLinkInputRefs.current[activeLinkIndex];
       if (inputElement) {
         const inputRect = inputElement.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
-        const desiredPickerHeight = 400; // Approximate height of the emoji picker
+        const desiredPickerHeight = 400;
 
-        // Check if there's enough space above the input
         if (inputRect.top > desiredPickerHeight + 20) {
-          // +20 for some margin
           setPickerPosition("top");
         } else {
           setPickerPosition("bottom");
         }
       }
     }
-  }, [showEmojiPicker, activeLinkIndex]); // Recalculate when picker visibility or active index changes
+  }, [showEmojiPicker, activeLinkIndex]);
 
   useEffect(() => {
     if (username && username.trim()) {
@@ -161,6 +165,63 @@ export default function EditLinkPage() {
     }
   }, [username]);
 
+  // Handle initial data loading (e.g., when editing an existing page)
+  useEffect(() => {
+    const fetchLinkPageData = async () => {
+      const token = await getAccessToken();
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/zaplink/link-page/me`, // Assuming an endpoint to fetch current user's link page
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const { username, bio, profilePicUrl, links: fetchedLinks, template } = response.data;
+        setUsername(username);
+        setBio(bio);
+        setBackendProfilePicUrl(profilePicUrl || ""); // Store the actual URL
+        setProfilePicPreviewUrl(profilePicUrl || ""); // Use for preview initially
+        setSelectedTemplate(template || "default"); // Set fetched template or default
+
+        // Map fetched links to component state, preserving existing image URLs
+        const mappedLinks = fetchedLinks.map(link => {
+          const platformInfo = PLATFORMS.find(p => p.name.toLowerCase() === link.icon.toLowerCase());
+          let platformName = platformInfo ? platformInfo.name : "Custom"; // Default to Custom if icon not found
+          let value = link.url;
+          let title = link.title;
+
+          // Special handling for prefixes to extract just the value
+          if (platformName !== "Custom") {
+            const foundPlatform = PLATFORMS.find(p => p.name === platformName);
+            if (foundPlatform && foundPlatform.prefix && link.url.startsWith(foundPlatform.prefix)) {
+              value = link.url.substring(foundPlatform.prefix.length);
+            }
+          }
+
+          return {
+            platform: platformName,
+            value: value,
+            title: title,
+            imageFile: null, // No file initially loaded from backend
+            linkImagePreviewUrl: link.linkImage || "", // Use linkImage from backend for preview
+            backendLinkImageUrl: link.linkImage || "", // Store the actual backend URL
+          };
+        });
+        setLinks(mappedLinks.length > 0 ? mappedLinks : [{ platform: "Instagram", value: "", title: "", imageFile: null, linkImagePreviewUrl: "", backendLinkImageUrl: "" }]);
+
+      } catch (error) {
+        console.error("Error fetching link page data:", error);
+        // Optionally, toast an error if data couldn't be loaded
+        // toast.error("Failed to load your link page data.");
+      }
+    };
+
+    fetchLinkPageData();
+  }, [getAccessToken]);
+
+
   const handleLinkChange = (index, field, value) => {
     const updated = [...links];
     updated[index][field] = value;
@@ -168,7 +229,7 @@ export default function EditLinkPage() {
   };
 
   const addLink = () => {
-    setLinks([...links, { platform: "Instagram", value: "", title: "" }]);
+    setLinks([...links, { platform: "Instagram", value: "", title: "", imageFile: null, linkImagePreviewUrl: "", backendLinkImageUrl: "" }]);
   };
 
   const removeLink = (index) => {
@@ -181,31 +242,35 @@ export default function EditLinkPage() {
     setLinks(updated);
   };
 
-  const handleProfilePicUpload = async (event) => {
+  const handleProfilePicFileChange = (event) => {
     const file = event.target.files[0];
-    if (!file) return;
-
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "music-album");
-
-    try {
-      const response = await axios.post(
-        `https://api.cloudinary.com/v1_1/datvfcnme/image/upload`,
-        formData
-      );
-      setProfilePic(response.data.secure_url);
-      toast.success("Profile picture uploaded successfully!");
-    } catch (error) {
-      console.error("Error uploading image to Cloudinary:", error);
-      toast.error("Failed to upload profile picture. Please try again.");
-    } finally {
-      setIsUploading(false);
+    if (file) {
+      setProfilePic(file); // Set the actual File object
+      setProfilePicPreviewUrl(URL.createObjectURL(file)); // For immediate local preview (blob URL)
+      setBackendProfilePicUrl(""); // Clear the backend URL as a new file is selected
+    } else {
+      setProfilePic(null);
+      setProfilePicPreviewUrl(""); // Clear preview
+      // Decide if you want to revert to backendProfilePicUrl here if input is cleared
+      // For now, it will clear if no file is selected.
     }
   };
 
-  // Function to handle AI bio generation
+  const handleCustomLinkImageFileChange = (event, index) => {
+    const file = event.target.files[0];
+    const updatedLinks = [...links];
+    if (file) {
+      updatedLinks[index].imageFile = file; // Store the actual File object
+      updatedLinks[index].linkImagePreviewUrl = URL.createObjectURL(file); // For immediate local preview
+      updatedLinks[index].backendLinkImageUrl = ""; // Clear backend URL as a new file is chosen
+    } else {
+      updatedLinks[index].imageFile = null;
+      updatedLinks[index].linkImagePreviewUrl = "";
+      // Decide if clearing means no image or revert to backendLinkImageUrl
+    }
+    setLinks(updatedLinks);
+  };
+
   const getAIBioResponse = async () => {
     setIsAILoading(true);
     const token = await getAccessToken();
@@ -222,7 +287,7 @@ export default function EditLinkPage() {
         }
       );
       setAiBioAnswer(res.data.bio);
-      setBio(res.data.bio); 
+      setBio(res.data.bio);
       toast.success("Bio generated by AI!");
     } catch (error) {
       console.error("AI Bio Generation Error:", error);
@@ -234,121 +299,132 @@ export default function EditLinkPage() {
   };
 
   const handleSubmit = async () => {
-    setIsSaving(true);
-    try {
-      const token = await getAccessToken();
+  setIsSaving(true);
+  try {
+    const token = await getAccessToken();
 
-      if (!username.trim()) {
-        toast.error("Username is required.");
-        return;
-      }
-      if (username.length < 3 || username.length > 30) {
-        toast.error("Username must be between 3 and 30 characters long.");
-        return;
-      }
-      if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
-        toast.error(
-          "Username can only contain alphanumeric characters, underscores, hyphens, and periods."
-        );
-        return;
-      }
-
-      if (bio.length > 250) {
-        toast.error("Bio cannot exceed 250 characters.");
-        return;
-      }
-
-      if (profilePic && !/^https?:\/\/.+\..+$/.test(profilePic)) {
-        toast.error("Invalid profile picture URL format.");
-        return;
-      }
-
-      if (links.length === 0) {
-        toast.error("At least one link is required.");
-        return;
-      }
-
-      const formattedLinks = links.map((link) => {
-        const platform = PLATFORMS.find((p) => p.name === link.platform);
-        if (!platform) {
-          toast.error(`Invalid platform selected for link: ${link.platform}`);
-          throw new Error(`Invalid platform: ${link.platform}`);
-        }
-
-        let fullUrl = "";
-        let displayTitle = link.platform; // Default title
-
-        if (platform.name === "Custom") {
-          fullUrl = link.value; // 'value' holds the URL for Custom
-          displayTitle = link.title || "Custom Link"; // Use the custom title, fallback
-        } else if (platform.name === "Gmail") {
-          fullUrl = platform.prefix + link.value;
-          displayTitle = "Gmail"; // Gmail's title is always "Gmail"
-        } else if (platform.name === "Website") {
-          fullUrl = platform.prefix + link.value;
-          displayTitle = "Website"; // Website's title is always "Website"
-        } else {
-          fullUrl = platform.prefix + link.value;
-          displayTitle = link.platform; // For other platforms, use platform name as title
-        }
-
-        if (!fullUrl.trim()) {
-          toast.error(`URL for ${displayTitle} is required.`);
-          throw new Error("Link URL is empty.");
-        }
-
-        // URL validation
-        if (
-          !/^https?:\/\/.+\..+$/.test(fullUrl) &&
-          !/^mailto:.+@.+\..+$/.test(fullUrl)
-        ) {
-          toast.error(
-            `Link for ${displayTitle}: Invalid URL format. Must start with http(s):// or mailto:.`
-          );
-          throw new Error("Invalid link URL format.");
-        }
-
-        return {
-          title: displayTitle, // Send the determined title
-          url: fullUrl,
-          icon: platform.name.toLowerCase(),
-        };
-      });
-
-      // Include the selectedTemplate in the payload
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/zaplink/link-page`,
-        {
-          username,
-          bio,
-          profilePic,
-          links: formattedLinks,
-          template: selectedTemplate,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      console.log("btn clicked");
-      setLinkPageUrl(response.data.linkPageUrl);
-
-      toast.success("Saved successfully!", {
-        description: "Your link page has been updated.",
-      });
-    } catch (err) {
-      console.error(err);
-      const errorMessage =
-        err.response?.data?.message ||
-        "There was an error saving your changes. Please try again.";
-      toast.error("Error saving link page.", {
-        description: errorMessage,
-      });
-    } finally {
-      setIsSaving(false);
+    if (!username.trim()) {
+      toast.error("Username is required.");
+      return;
     }
-  };
+    if (username.length < 3 || username.length > 30) {
+      toast.error("Username must be between 3 and 30 characters long.");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
+      toast.error(
+        "Username can only contain letters, numbers, underscores, hyphens, and periods."
+      );
+      return;
+    }
+
+    if (bio.length > 250) {
+      toast.error("Bio cannot exceed 250 characters.");
+      return;
+    }
+
+    if (links.length === 0) {
+      toast.error("At least one link is required.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("username", username);
+    formData.append("bio", bio);
+    formData.append("template", selectedTemplate);
+
+    if (profilePic instanceof File) {
+      formData.append("profilePic", profilePic);
+    } else if (backendProfilePicUrl) {
+      formData.append("profilePicUrl", backendProfilePicUrl);
+    }
+
+    const isValidUrl = (url) => {
+      const regex =
+        /^(https?:\/\/[^\s]+|mailto:[^\s]+|tel:[^\s]+|sms:[^\s]+|whatsapp:[^\s]+)/i;
+      return regex.test(url);
+    };
+
+    const formattedLinks = links.map((link, index) => {
+      const platform = PLATFORMS.find((p) => p.name === link.platform);
+      if (!platform) {
+        toast.error(`Invalid platform selected for link: ${link.platform}`);
+        throw new Error(`Invalid platform: ${link.platform}`);
+      }
+
+      let fullUrl = "";
+      let displayTitle = platform.name;
+
+      if (platform.name === "Custom") {
+        fullUrl = link.value;
+        displayTitle = link.title || "Custom Link";
+
+        if (link.imageFile instanceof File) {
+          formData.append(`linkImage_${index}`, link.imageFile);
+        } else if (link.backendLinkImageUrl) {
+          formData.append(
+            `linkImageExistingUrl_${index}`,
+            link.backendLinkImageUrl
+          );
+        }
+      } else if (platform.name === "Gmail") {
+        fullUrl = platform.prefix + link.value;
+        displayTitle = "Gmail";
+      } else if (platform.name === "Website") {
+        fullUrl = link.value;
+        if (!fullUrl.startsWith("http://") && !fullUrl.startsWith("https://")) {
+          fullUrl = "https://" + fullUrl;
+        }
+      } else {
+        fullUrl = platform.prefix + link.value;
+      }
+
+      if (!fullUrl.trim()) {
+        toast.error(`URL for ${displayTitle} is required.`);
+        throw new Error("Empty URL");
+      }
+
+      if (!isValidUrl(fullUrl)) {
+        toast.error(
+          `Invalid URL for ${displayTitle}. Must be a valid web/mail/phone link.`
+        );
+        throw new Error("Invalid URL format.");
+      }
+
+      return {
+        title: displayTitle,
+        url: fullUrl,
+        icon: platform.name.toLowerCase(),
+      };
+    });
+
+    formData.append("links", JSON.stringify(formattedLinks));
+
+    const response = await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}/zaplink/link-page`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    setLinkPageUrl(response.data.linkPageUrl);
+    toast.success("Saved successfully!", {
+      description: "Your link page has been updated.",
+    });
+  } catch (err) {
+    console.error("Submission Error:", err);
+    const message =
+      err.response?.data?.message ||
+      "There was an error saving your changes. Please try again.";
+    toast.error("Error saving link page.", { description: message });
+  } finally {
+    setIsSaving(false);
+  }
+};
+
 
   const handleDownloadQRCode = () => {
     if (qrCodeDataUrl) {
@@ -417,7 +493,6 @@ export default function EditLinkPage() {
     <div className="max-w-2xl lg:max-w-4xl mx-auto p-4 space-y-4">
       <Card className="dark:bg-gray-800 shadow-none border-none">
         <CardContent className="space-y-4 pt-6">
-        
           <Input
             placeholder="Your unique username (e.g., zaplink123)"
             value={username}
@@ -433,18 +508,19 @@ export default function EditLinkPage() {
             <Input
               type="file"
               accept="image/*"
-              onChange={handleProfilePicUpload}
-              disabled={isUploading}
+              onChange={handleProfilePicFileChange}
             />
-            {profilePic && (
+            {profilePicPreviewUrl && ( // Show preview if existing or new file
               <img
-                src={profilePic}
+                src={profilePicPreviewUrl}
                 alt="Profile"
                 className="h-10 w-10 rounded-full object-cover"
               />
             )}
-            {isUploading && <p>Uploading...</p>}
           </div>
+
+          ---
+
           {/* Bio Section with AI integration */}
           <h2 className="text-lg font-semibold">Bio</h2>
           <div className="flex items-center gap-2">
@@ -453,7 +529,7 @@ export default function EditLinkPage() {
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               className="flex-grow"
-              disabled={useAIBio} // Disable manual input if AI is used
+              disabled={useAIBio}
             />
             <Button
               variant="outline"
@@ -489,18 +565,12 @@ export default function EditLinkPage() {
                   "Generate Bio"
                 )}
               </Button>
-              {/* {aiBioAnswer && (
-                <div className="p-2 border rounded bg-gray-50 dark:bg-gray-700">
-                  <p className="text-sm text-muted-foreground">
-                    AI Suggestion:
-                  </p>
-                  <p>{aiBioAnswer}</p>
-                </div>
-              )} */}
             </div>
           )}
+
+          ---
+
           {/* Template Chooser Field */}
-          <hr className="my-4" /> {/* Separator */}
           <h2 className="text-lg font-semibold">Choose Your Template</h2>
           <Select onValueChange={setSelectedTemplate} value={selectedTemplate}>
             <SelectTrigger className="w-full">
@@ -517,7 +587,9 @@ export default function EditLinkPage() {
           <p className="text-xs text-muted-foreground">
             Select a visual template for your link-in-bio page.
           </p>
-          <hr className="my-4" /> {/* Separator */}
+
+          ---
+
           <h2 className="text-lg font-semibold">Links</h2>
           {links.map((link, index) => {
             const selected =
@@ -532,9 +604,12 @@ export default function EditLinkPage() {
                   <Select
                     onValueChange={(val) => {
                       handleLinkChange(index, "platform", val);
-                      // Reset title and value if platform changes away from Custom
+                      // Reset title, value, and image if platform changes away from Custom
                       if (val !== "Custom") {
                         handleLinkChange(index, "title", "");
+                        handleLinkChange(index, "imageFile", null); // Clear file
+                        handleLinkChange(index, "linkImagePreviewUrl", ""); // Clear preview URL
+                        handleLinkChange(index, "backendLinkImageUrl", ""); // Clear backend URL
                       }
                       handleLinkChange(index, "value", ""); // Also reset value
                     }}
@@ -583,12 +658,12 @@ export default function EditLinkPage() {
                   </Button>
                 </div>
 
-                {/* Conditional Input for Custom Link Title */}
+                {/* Conditional Input for Custom Link Title and Image Upload */}
                 {link.platform === "Custom" && (
-                  <div className="relative pl-8 pt-1">
+                  <div className="relative pl-8 pt-1 space-y-2">
                     <div className="flex items-center gap-2">
                       <Input
-                        ref={(el) => (customLinkInputRefs.current[index] = el)} // Attach ref here
+                        ref={(el) => (customLinkInputRefs.current[index] = el)}
                         placeholder="Custom Link Title (e.g., My Portfolio)"
                         value={link.title}
                         onChange={(e) =>
@@ -598,7 +673,6 @@ export default function EditLinkPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          // Toggle visibility and set active index
                           if (activeLinkIndex === index && showEmojiPicker) {
                             setShowEmojiPicker(false);
                             setActiveLinkIndex(null);
@@ -612,7 +686,6 @@ export default function EditLinkPage() {
                         😊
                       </button>
                     </div>
-
                     {showEmojiPicker && activeLinkIndex === index && (
                       <div
                         className="absolute z-50 mt-2 right-0"
@@ -620,16 +693,34 @@ export default function EditLinkPage() {
                           pickerPosition === "top"
                             ? { bottom: "calc(100% + 8px)" }
                             : { top: "100%" }
-                        } // Dynamic positioning
+                        }
                       >
                         <EmojiPicker onEmojiClick={handleEmojiClick} />
                       </div>
                     )}
-
                     <p className="text-xs text-muted-foreground mt-1">
                       This is the text that will appear on your page for this
                       link.
                     </p>
+
+                    {/* Custom Link Image Upload */}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleCustomLinkImageFileChange(e, index)}
+                        className="flex-grow"
+                      />
+                      {link.linkImagePreviewUrl ? (
+                        <img
+                          src={link.linkImagePreviewUrl}
+                          alt="Link Icon"
+                          className="h-10 w-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="h-10 w-10 text-muted-foreground" /> // Lucide React Icon
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -648,12 +739,13 @@ export default function EditLinkPage() {
               "Save Page"
             )}
           </Button>
-          {/* QR Code and Link Section */}
+
+          ---
+
           {linkPageUrl && linkPageUrl.trim() && (
             <>
               <h2 className="text-lg font-semibold mt-6">Your Link-in-Bio</h2>
               <div className="flex flex-col md:flex-row items-center gap-6 p-4 border rounded-lg">
-                {/* QR Code Section */}
                 <div ref={qrCodeRef} className="p-2 border rounded-lg">
                   {qrCodeDataUrl ? (
                     <img
@@ -668,7 +760,6 @@ export default function EditLinkPage() {
                   )}
                 </div>
 
-                {/* Link + Actions */}
                 <div className="flex flex-col items-center md:items-start gap-4 w-full">
                   <div className="flex gap-2">
                     <Button
